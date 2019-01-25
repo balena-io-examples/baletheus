@@ -1,0 +1,20 @@
+{
+  "name": "prometheus-sd",
+  "version": "0.0.1",
+  "description": "Prometheus file-sd based service discovery mechanism for balena devices",
+  "repository": "",
+  "main": "src/app.js",
+  "dependencies": {
+    "balena-sdk": "^11.2.0",
+    "capitano": "^1.8.2",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node src/app.js",
+    "build": "tsc src/*.ts"
+  },
+  "author": "",
+  "license": "ISC"
+}

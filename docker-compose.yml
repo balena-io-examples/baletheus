@@ -1,0 +1,18 @@
+version: '2'
+volumes:
+    resin-data:
+services:
+    sd:
+        build: ./sd
+        environment:
+            - API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        labels:
+            io.balena.features.balena-api: '1'
+        volumes:
+            - 'resin-data:/app/data'
+    prometheus:
+        build: ./prometheus
+        volumes:
+            - 'resin-data:/app/data'
+        ports:
+            - '80:9090'

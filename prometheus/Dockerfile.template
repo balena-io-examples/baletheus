@@ -1,0 +1,7 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-golang:1.11.2
+WORKDIR /app
+ADD . /app/
+RUN install_packages git
+RUN go get github.com/prometheus/prometheus/cmd/...
+RUN chmod 777 /app/entry.sh
+CMD ["/app/entry.sh"]
