@@ -1,6 +1,6 @@
 import * as capitano from 'capitano';
 import * as Promise from 'bluebird';
-import * as fs from 'fs';
+import { rename, writeFile } from 'fs';
 import * as balenaSdk from 'balena-sdk';
 import * as settings from 'balena-settings-client';
 
@@ -26,6 +26,22 @@ interface Cmd {
 	signature: string;
 	description: string;
 	isWildcard: () => boolean;
+}
+
+interface Device {
+	targets: Array<string>,
+	labels: Labels
+}
+
+interface Labels {
+	// TODO: maybe location, tags, application
+	device_name: string,
+	uuid: string,
+	device_type: string,
+	commit: string,
+	os_version: string,
+	os_variant: string,
+	supervisor_version: string
 }
 
 capitano.command({
@@ -60,16 +76,15 @@ capitano.command({
 		},
 	],
 	action: (params: Params, opts: Opts) => {
-		console.log(process.env.API_KEY);
-		balena.auth.loginWithToken(process.env.API_KEY).then(function() {
-			balena.auth.isLoggedIn().then(function(isLoggedIn) {
+		balena.auth.loginWithToken(process.env.API_KEY).then(() => {
+			balena.auth.isLoggedIn().then((isLoggedIn) => {
 				// TODO: check if login was successful. this needs to either back off, or bail harder
-				if (isLoggedIn === false) {
+				if (!isLoggedIn) {
 					throw new Error('Authentication Error')
 				}
 			})
-		})
-		setInterval(function() {
+		});
+		setInterval(() => {
 			writeDevices(params, opts);
 		}, opts.refresh);
 	}
@@ -86,68 +101,70 @@ capitano.command({
 //  },
 //  ...
 //]
-class Device {
-		constructor(
-				private targets: Array<string>,
-				private labels: Labels
-		)
-		{}
-}
-
-class Labels {
-		// TODO: maybe location, tags, application
-		constructor(
-				private device_name: string,
-				private uuid: string,
-				private device_type: string,
-				private commit: string,
-				private os_version: string,
-				private os_variant: string,
-				private supervisor_version: string
-		)
-		{}
-}
-
 const writeDevices = (params: Params, opts: Opts) => {
 	let allTargets = new Array<Device>();
-	balena.models.device.getAll().then(function(devices) {
-			for (let device of devices) {
-					let labels = new Labels(device.device_name,
-							device.uuid,
-							device.device_type,
-							device.is_on__commit,
-							device.os_version,
-							device.os_variant,
-							device.supervisor_version);
-					let targets = [];
-					if (!opts.publicUrls) {
-									if (device.ip_address !== null) {
-											let targets = device.ip_address.split(" ");
-											let newDevice = new Device(
-													targets,
-													labels
-											);
-											allTargets.push(newDevice);
-									} else {
-											console.log(`skipping device ${device.device_name}, no ip_address`);
-									}
-					} else {
-							// TODO implement me using public urls!
-							console.error('Remote scraping via public URL not currently supported')
-							throw new Error('Remote scraping via public URL not currently supported')
+	balena.models.device.getAll().then((devices) => {
+
+		devices.forEach((device) => {
+			const labels = {device_name: device.device_name,
+					uuid: device.uuid,
+					device_type: device.device_type,
+					commit: device.is_on__commit,
+					os_version: device.os_version,
+					os_variant: device.os_variant,
+					supervisor_version: device.supervisor_version} as Labels;
+			const targets = [];
+			if (!opts.publicUrls) {
+				if (device.ip_address) {
+					const targets = device.ip_address.split(" ");
+					const newDevice = {
+						targets,
+						labels,
+					} as Device;
+					allTargets.push(newDevice);
+				} else {
+					console.log(`skipping device ${device.device_name}, no ip_address`);
+				}
+			} else {
+				if (device.is_web_accessible) {
+					if (device.uuid) {
+						balena.settings.get('proxyUrl')
+						.then((proxyUrl) => {
+							const newDevice = {
+								targets: [`${device.uuid}.${proxyUrl}`],
+								labels,
+							} as Device;
+							console.log(newDevice);
+							allTargets.push(newDevice);
+						});
 					}
+				} else {
+					console.log(`device ${device.device_name} does not have the public web URL enabled`);
+				}
 			}
-			return allTargets
-	}).then(function(targets) {
+		});
+		return allTargets;
+	}).then((targets) => {
 		if (targets.length !== 0 || opts.writeEmpty === true) {
+			const newFile = `${opts.filePath}.new`;
 			return new Promise(resolve => {
-				// TODO should write to second file and mv into place (atomic write)
-				fs.writeFile(opts.filePath, JSON.stringify(targets, null, 2), (err) => {
-					if (!err) resolve()
+				writeFile(newFile, JSON.stringify(targets, null, 2), (err) => {
+					if (!err) {
+						resolve()
+					}
 					else throw err
 				})
-			}).then(function() {
-				console.log(`SD file at ${opts.filePath} has been updated with ${targets.length} devices`)
+			}).then(() => {
+				return new Promise(resolve => {
+					rename(newFile, opts.filePath, (err) => {
+						if (!err) {
+							resolve()
+						}
+						else throw err
+					})
+				})
+			}).then(() => {
+				console.log(`SD file at ${opts.filePath} has been updated with ${targets.length} devices\n`)
 			})
 		} else {
 			console.error('Cowardly refusing to write file with 0 devices')
