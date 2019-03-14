@@ -145,7 +145,9 @@ const writeDevices = (params: Params, opts: Opts) => {
 		});
 		return allTargets;
 	}).then((targets) => {
-		if (targets.length !== 0 || opts.writeEmpty === true) {
+		if (targets.length === 0 && !opts.writeEmpty) {
+			console.error('Cowardly refusing to write file with 0 devices');
+		} else {
 			const newFile = `${opts.filePath}.new`;
 			return new Promise(resolve => {
 				writeFile(newFile, JSON.stringify(targets, null, 2), (err) => {
@@ -166,8 +168,6 @@ const writeDevices = (params: Params, opts: Opts) => {
 			}).then(() => {
 				console.log(`SD file at ${opts.filePath} has been updated with ${targets.length} devices\n`)
 			})
-		} else {
-			console.error('Cowardly refusing to write file with 0 devices')
 		}
 	})
 }

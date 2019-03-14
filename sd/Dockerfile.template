@@ -2,5 +2,5 @@ FROM balenalib/%%BALENA_MACHINE_NAME%%-node:10.10
 RUN install_packages git && mkdir -p /app/data
 ADD . /app/
 WORKDIR /app
-RUN npm install && npm run build && chmod 777 /app/entry.sh
+RUN npm install && npm run build
 CMD ["/app/entry.sh"]
