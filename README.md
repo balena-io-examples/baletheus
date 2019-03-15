@@ -18,6 +18,8 @@ The file sd sidecar writes to a shared volume that Prometheus reads from directl
 
 Pass in an API_KEY value in the `docker-compose.yml` file or in the environment
 
+These flags are configured via the [entry
+script](https://github.com/xginn8/baletheus/blob/master/baletheus/entry.sh#L2):
 ```sh
 --filePath/-f=PATH : File path to write devices to
 	REQUIRED
@@ -27,6 +29,20 @@ Pass in an API_KEY value in the `docker-compose.yml` file or in the environment
 	BOOLEAN
 --writeEmpty/-z : Enable writing file without any devices (disable failsafe)
 	BOOLEAN
+```
+
+## Labels:
+
+Exported labels include:
+
+```sh
+device_name: string,
+uuid: string,
+device_type: string,
+commit: string,
+os_version: string,
+os_variant: string,
+supervisor_version: string
 ```
 
 ## NOTE:
