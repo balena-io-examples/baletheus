@@ -51,34 +51,41 @@ capitano.command({
 	description: 'Generate Prometheus SD file from balenaCloud API',
 	options: [
 		{
-			signature: 'publicUrls',
-			required: false,
-			boolean: true,
-			alias: ['p']
-		},
-		{
-			signature: 'writeEmpty',
-			required: false,
-			boolean: true,
-			alias: ['z']
-		},
-		{
 			signature: 'filePath',
 			required: true,
 			parameter: 'filePath',
+			description: 'File path to write devices to',
 			alias: ['f']
 		},
 		{
 			signature: 'refresh',
 			required: true,
 			parameter: 'refresh',
+			description: 'Refresh interval (ms)',
 			alias: ['r']
+		},
+		{
+			signature: 'publicUrls',
+			required: false,
+			boolean: true,
+			description: 'Enable scraping via public URL',
+			alias: ['p']
+		},
+		{
+			signature: 'writeEmpty',
+			required: false,
+			boolean: true,
+			description: 'Enable writing file without any devices (disable failsafe)',
+			alias: ['z']
 		},
 	],
 	action: (params: Params, opts: Opts) => {
+		if (!process.env.API_KEY) {
+			console.error('Pass an API_KEY via environment variable to connect to balenaCloud');
+			process.exit(1);
+		}
 		balena.auth.loginWithToken(process.env.API_KEY).then(() => {
 			balena.auth.isLoggedIn().then((isLoggedIn) => {
-				// TODO: check if login was successful. this needs to either back off, or bail harder
 				if (!isLoggedIn) {
 					throw new Error('Authentication Error')
 				}
@@ -172,9 +179,21 @@ const writeDevices = (params: Params, opts: Opts) => {
 	})
 }
 
+const showHelp = (command) => {
+	console.log("Usage: baletheus [FLAGS] [OPTIONS]");
+	console.log(`\t${command[0].description}`);
+	console.log('\tPass an API_KEY via environment variable to connect to balenaCloud');
+	console.log('\nCommands:');
+	command[0].options.forEach( (option) => {
+		console.log('');
+		console.log(`\t--${option.signature}/-${option.alias[0]}: ${option.description}`);
+		console.log(`\t  required? ${option.required} boolean? ${option.boolean}`);
+	});
+}
+
 capitano.run(process.argv, (error: Error) => {
 	if (error != null) {
-		console.log(error);
+		showHelp(capitano.state.commands);
 		process.exit(1);
 	}
 });

@@ -2,8 +2,8 @@ version: '2'
 volumes:
     resin-data:
 services:
-    sd:
-        build: ./sd
+    baletheus:
+        build: ./baletheus
         environment:
             - API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         labels:
