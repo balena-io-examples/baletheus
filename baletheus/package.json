@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Balena Service Discovery for Prometheus",
   "repository": "",
-  "main": "src/app.js",
+  "main": "src/index.js",
   "dependencies": {
     "balena-sdk": "^11.2.0",
     "capitano": "^1.8.2",
@@ -12,7 +12,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "node src/app.js",
+    "test": "node src/index.js",
     "build": "tsc src/*.ts"
   },
   "author": "",

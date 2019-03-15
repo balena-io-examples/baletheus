@@ -4,8 +4,6 @@ volumes:
 services:
     baletheus:
         build: ./baletheus
-        environment:
-            - API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         labels:
             io.balena.features.balena-api: '1'
         volumes:
