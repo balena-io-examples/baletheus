@@ -26,17 +26,12 @@ The sd sidecar writes to a shared volume that Prometheus reads from directly.
 
 Pass in an API_KEY value via balenaCloud or in the environment
 
-These flags are configured via the [entry
-script](https://github.com/xginn8/baletheus/blob/master/baletheus/entry.sh#L2):
+All other runtime configuration is done via environment variables:
 ```sh
---filePath/-f=PATH : File path to write devices to
-	REQUIRED
---refresh/-r=NUMBER : Refresh interval (ms)
-	REQUIRED
---publicUrls/-p : Enable scraping via public URL
-	BOOLEAN
---writeEmpty/-z : Enable writing file without any devices (disable failsafe)
-	BOOLEAN
+SD_FILE_PATH: PATH (required) File path to write devices to
+REFRESH_RATE: NUMBER Refresh interval (ms) (default: 5000)
+USE_PUBLIC_URLS: BOOLEAN Enable scraping via public URL
+WRITE_EMPTY: BOOLEAN Enable writing file without any devices (disable failsafe)
 ```
 
 ## Labels:

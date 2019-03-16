@@ -1,4 +1,3 @@
-import * as capitano from 'capitano';
 import * as Promise from 'bluebird';
 import { rename, writeFile } from 'fs';
 import * as balenaSdk from 'balena-sdk';
@@ -29,7 +28,7 @@ interface Cmd {
 }
 
 interface Device {
-	targets: Array<string>,
+	targets: string[],
 	labels: Labels
 }
 
@@ -44,59 +43,6 @@ interface Labels {
 	supervisor_version: string
 }
 
-capitano.command({
-	signature: '*',
-	// TODO better help text
-	// TODO all from env?
-	description: 'Generate Prometheus SD file from balenaCloud API',
-	options: [
-		{
-			signature: 'filePath',
-			required: true,
-			parameter: 'filePath',
-			description: 'File path to write devices to',
-			alias: ['f']
-		},
-		{
-			signature: 'refresh',
-			required: true,
-			parameter: 'refresh',
-			description: 'Refresh interval (ms)',
-			alias: ['r']
-		},
-		{
-			signature: 'publicUrls',
-			required: false,
-			boolean: true,
-			description: 'Enable scraping via public URL',
-			alias: ['p']
-		},
-		{
-			signature: 'writeEmpty',
-			required: false,
-			boolean: true,
-			description: 'Enable writing file without any devices (disable failsafe)',
-			alias: ['z']
-		},
-	],
-	action: (params: Params, opts: Opts) => {
-		if (!process.env.API_KEY) {
-			console.error('Pass an API_KEY via environment variable to connect to balenaCloud');
-			process.exit(1);
-		}
-		balena.auth.loginWithToken(process.env.API_KEY).then(() => {
-			balena.auth.isLoggedIn().then((isLoggedIn) => {
-				if (!isLoggedIn) {
-					throw new Error('Authentication Error')
-				}
-			})
-		});
-		setInterval(() => {
-			writeDevices(params, opts);
-		}, opts.refresh);
-	}
-});
-
 // prometheus file_sd format
 // from: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config
 // [
@@ -108,9 +54,9 @@ capitano.command({
 //  },
 //  ...
 //]
-const writeDevices = (params: Params, opts: Opts) => {
+const writeDevices = (): void => {
 	let allTargets = new Array<Device>();
-	balena.models.device.getAll().then((devices) => {
+	balena.models.device.getAll().then((devices: balenaSdk.Device[]) => {
 
 		devices.forEach((device) => {
 			const labels = {device_name: device.device_name,
@@ -120,8 +66,8 @@ const writeDevices = (params: Params, opts: Opts) => {
 					os_version: device.os_version,
 					os_variant: device.os_variant,
 					supervisor_version: device.supervisor_version} as Labels;
-			const targets = [];
-			if (!opts.publicUrls) {
+			const targets: string[] = [];
+			if (!process.env.USE_PUBLIC_URLS) {
 				if (device.ip_address) {
 					const targets = device.ip_address.split(" ");
 					const newDevice = {
@@ -136,7 +82,7 @@ const writeDevices = (params: Params, opts: Opts) => {
 				if (device.is_web_accessible) {
 					if (device.uuid) {
 						balena.settings.get('proxyUrl')
-						.then((proxyUrl) => {
+						.then((proxyUrl: string) => {
 							const newDevice = {
 								targets: [`${device.uuid}.${proxyUrl}`],
 								labels,
@@ -151,49 +97,53 @@ const writeDevices = (params: Params, opts: Opts) => {
 			}
 		});
 		return allTargets;
-	}).then((targets) => {
-		if (targets.length === 0 && !opts.writeEmpty) {
+	}).then((targets: Device[]) => {
+		if (targets.length === 0 && !process.env.WRITE_EMPTY) {
 			console.error('Cowardly refusing to write file with 0 devices');
 		} else {
-			const newFile = `${opts.filePath}.new`;
-			return new Promise(resolve => {
-				writeFile(newFile, JSON.stringify(targets, null, 2), (err) => {
-					if (!err) {
-						resolve()
-					}
-					else throw err
-				})
-			}).then(() => {
+			if (!process.env.SD_FILE_PATH) {
+				console.error('Pass the file path to write to via SD_FILE_PATH environment variable');
+				process.exit(1);
+			} else {
+				const newFile = `${process.env.SD_FILE_PATH}.new`;
 				return new Promise(resolve => {
-					rename(newFile, opts.filePath, (err) => {
+					writeFile(newFile, JSON.stringify(targets, null, 2), (err) => {
 						if (!err) {
 							resolve()
 						}
 						else throw err
 					})
+				}).then(() => {
+					return new Promise(resolve => {
+						rename(newFile, process.env.SD_FILE_PATH as unknown as string, (err) => {
+							if (!err) {
+								resolve()
+							}
+							else throw err
+						})
+					})
+				}).then(() => {
+					console.log(`SD file at ${process.env.SD_FILE_PATH} has been updated with ${targets.length} devices\n`)
 				})
-			}).then(() => {
-				console.log(`SD file at ${opts.filePath} has been updated with ${targets.length} devices\n`)
-			})
+			}
 		}
 	})
 }
 
-const showHelp = (command) => {
-	console.log("Usage: baletheus [FLAGS] [OPTIONS]");
-	console.log(`\t${command[0].description}`);
-	console.log('\tPass an API_KEY via environment variable to connect to balenaCloud');
-	console.log('\nCommands:');
-	command[0].options.forEach( (option) => {
-		console.log('');
-		console.log(`\t--${option.signature}/-${option.alias[0]}: ${option.description}`);
-		console.log(`\t  required? ${option.required} boolean? ${option.boolean}`);
+if (!process.env.API_KEY) {
+	console.error('Pass an API_KEY via environment variable to connect to balenaCloud');
+	process.exit(1);
+} else {
+	balena.auth.loginWithToken(process.env.API_KEY).then(() => {
+		balena.auth.isLoggedIn().then((isLoggedIn: boolean) => {
+			if (!isLoggedIn) {
+				throw new Error('Authentication Error')
+			}
+		})
 	});
 }
 
-capitano.run(process.argv, (error: Error) => {
-	if (error != null) {
-		showHelp(capitano.state.commands);
-		process.exit(1);
-	}
-});
+const REFRESH_RATE: number = process.env.REFRESH_RATE as unknown as number || 5000;
+setInterval(() => {
+	writeDevices();
+}, REFRESH_RATE as unknown as number);

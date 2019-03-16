@@ -6,7 +6,6 @@
   "main": "src/index.js",
   "dependencies": {
     "balena-sdk": "^11.2.0",
-    "capitano": "^1.8.2",
     "ts-node": "^7.0.1",
     "typescript": "^3.2.1"
   },
