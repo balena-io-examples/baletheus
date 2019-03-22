@@ -1,0 +1,96 @@
+# Monitoring all the way down
+# Self-similar monitoring for the edge
+
+TODO:
+	mention the power of tags
+	mention how maybe on-device isn't the best place to deploy
+	mention how to provision a new datasource or dashboard
+	diagram the system to make more clear the setup
+
+## Introduction
+Properly monitoring a fleet of devices is an evolving art. One of the current market leaders in the server world for
+application and hardware monitoring is Prometheus, both for bare metal and as a first-class citizen in the Kubernetes
+world. In order to reduce the friction between the edge and the cloud, this project will deploy a Prometheus stack to
+monitor an entire fleet of balena devices (from a balena device, nonetheless!).
+
+We have showcased Prometheus [a few](https://www.balena.io/blog/monitoring-linux-stats-with-prometheus-io/) [other
+times](https://www.balena.io/blog/prometheusv2/), though this tutorial expands on those to provide a fair bit more
+functionality.
+
+## Goals
+Here are our goals with this tutorial:
+
+1. Prometheus (monitoring) + Grafana (visualization) deployed to balena device(s), monitoring a fleet
+1. Service discovery mechanism to automatically detect new devices
+1. True multicontainer monitoring support on-device (multiple exporters)
+
+## Requirements
+
+1. Two applications, one to do the monitoring (let us call this "monitor") and one to be monitored (call this
+   application "thingy")
+1. This design is especially powerful if the application is multicontainer, though it need not be.
+
+## Set up
+
+### "monitor" application
+1. The monitoring stack can be deployed many different locations. In this example, we will deploy it to balenaCloud and
+   run it on a device within the fleet.
+1. Start by creating an application to deploy to. Let us call it "monitor".
+1. Since the service discovery is configured purely via environment variable, we will want to preset some to ensure our
+   monitoring starts up without a hitch.
+1. [Generate an API key](https://www.balena.io/docs/learn/manage/account/#api-keys) and save the key in your application as
+   an environment variable named `API_KEY`.
+1. If you plan to monitor remotely (i.e. via the public URLs), set an environment variable `USE_PUBLIC_URLS` to `true`
+1. Next, clone the example repository [here](https://github.com/balena-io-playground/baletheus) and push it to your
+   newly-created application.
+1. If you now enable the public URL of the device(s) running the `monitor` application and navigate to the public URL,
+   you should be able to view and access your very own Grafana instance.
+   * Note: the default username/password is admin/admin, it is recommended to change that as soon as possible.
+
+### "thingy" application
+1. At a bare minimum, to get the most from your device you will want to run
+   [`node_exporter`](https://github.com/prometheus/node_exporter), which exports machine metrics like packet counters
+   and memory usage.
+* Note: there is an example of `node_exporter` bundled in the `meta-exporter`
+  [repository](https://github.com/xginn8/meta-exporter/blob/master/docker-compose.yml#L8). This exporter is one of the
+  few that need not run as a sidecar.
+1. Scan [this list](https://github.com/prometheus/prometheus/wiki/Default-port-allocations) for any other open-source
+   code you may be running. If an exporter exists for your preferred database/message queue/application, it is always a
+   good practice to track it. Since there are many pre-baked exporters and [dashboards](https://grafana.com/dashboards),
+   you can monitor almost everything you did not write with minimal setup. The real power comes when instrumenting your
+   own code, more on that in another post!
+* Some interesting exporters include:
+** [MQTT exporter](https://github.com/inovex/mqtt_blackbox_exporter)
+** [Redis exporter](https://github.com/oliver006/redis_exporter)
+** [OpenVPN exporter](https://github.com/kumina/openvpn_exporter)
+** [Redis exporter](https://github.com/oliver006/redis_exporter)
+** [PostgreSQL exporter](https://github.com/wrouesnel/postgres_exporter)
+1. Add the [meta-exporter](https://github.com/xginn8/meta-exporter/blob/master/docker-compose.yml#L3) to your
+   `docker-compose.yml` to begin the internal scraping process.
+1. The general pattern we will follow is:
+* Add each exporter as a sidecar within the entry script for your application.
+* Expose the port number to the meta-exporter within the comma-separated port list environment variable
+  ([`SCRAPE_PORTS`](https://github.com/xginn8/meta-exporter/blob/master/docker-compose.yml#L7))
+* If using public URLs, ensure that the public URLs are enabled for the devices you want to monitor.
+* Find or create a dashboard in Grafana to visualize what you need from the data you are now collecting
+
+## Bonus points
+
+At this point, you should be able to monitor any number of exporters and create beautiful graphs and visualizations for
+those devices/exporters/applications. This tutorial is just the tip of the iceberg, Grafana and Prometheus are
+incredibly active communities that are evolving every day. Some other things potentially worth investigating (though
+mostly outside the scope of this tutorial):
+
+* Instrument your own code and export what you see fit
+* Configuring and managing alerting via Alertmanager
+* Monitoring various cloud providers usage via Grafana
+
+## Glossary
+#### [Prometheus](https://prometheus.io/):
+	* Pull-based monitoring system and time series database
+#### [Grafana](https://grafana.com/):
+	* Visualization platform for time series data
+#### service discovery:
+	* Supported mechanism to add new scrape targets to Prometheus backend
+#### exporter:
+	* Sidecar process that runs alongside an application and returns metrics describing the state of the application
