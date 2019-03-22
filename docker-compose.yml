@@ -10,7 +10,11 @@ services:
             - 'resin-data:/app/data'
     prometheus:
         build: ./prometheus
+        network_mode: 'host'
         volumes:
             - 'resin-data:/app/data'
-        ports:
-            - '80:9090'
+    grafana:
+        build: ./grafana
+        network_mode: 'host'
+        environment:
+            - 'GF_SERVER_HTTP_PORT=80'
