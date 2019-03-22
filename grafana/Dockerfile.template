@@ -4,6 +4,5 @@ ADD . /app/
 RUN install_packages wget adduser libfontconfig && \
 wget -q https://dl.grafana.com/oss/release/grafana_5.4.2_amd64.deb && \
 dpkg -i grafana_5.4.2_amd64.deb && \
-cp /app/prometheus.yml /etc/grafana/provisioning/datasources/prometheus.yml && \
-chown root:grafana /etc/grafana/provisioning/datasources/prometheus.yml
+chown -R root:grafana /app/provisioning
 CMD [ "/app/entry.sh" ]

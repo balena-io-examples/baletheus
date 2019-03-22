@@ -18,3 +18,5 @@ services:
         network_mode: 'host'
         environment:
             - 'GF_SERVER_HTTP_PORT=80'
+            - 'GF_PATHS_PROVISIONING=/app/provisioning'
+            - 'GF_SESSION_PROVIDER=memory'
