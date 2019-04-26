@@ -16,4 +16,5 @@ datasources:
   url: http://localhost:9090
   version: 1
   # <bool> allow users to edit datasources from the UI.
-  editable: true
+  editable: false
+  isDefault: true
