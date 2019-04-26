@@ -10,6 +10,7 @@ balenaSdk.setSharedOptions({
 })
 
 const balena = balenaSdk()
+const SD_FILE_PATH = process.env.SD_FILE_PATH || './balena.json';
 
 interface Params {}
 
@@ -34,6 +35,7 @@ interface Device {
 
 interface Labels {
 	// TODO: maybe location, tags, application
+	// TODO: many of these "labels" should be moved to a single exporter..
 	device_name: string,
 	uuid: string,
 	device_type: string,
@@ -101,31 +103,26 @@ const writeDevices = (): void => {
 		if (targets.length === 0 && !process.env.WRITE_EMPTY) {
 			console.error('Cowardly refusing to write file with 0 devices');
 		} else {
-			if (!process.env.SD_FILE_PATH) {
-				console.error('Pass the file path to write to via SD_FILE_PATH environment variable');
-				process.exit(1);
-			} else {
-				const newFile = `${process.env.SD_FILE_PATH}.new`;
+			const newFile = `${SD_FILE_PATH}.new`;
+			return new Promise(resolve => {
+				writeFile(newFile, JSON.stringify(targets, null, 2), (err) => {
+					if (!err) {
+						resolve()
+					}
+					else throw err
+				})
+			}).then(() => {
 				return new Promise(resolve => {
-					writeFile(newFile, JSON.stringify(targets, null, 2), (err) => {
+					rename(newFile, SD_FILE_PATH as unknown as string, (err) => {
 						if (!err) {
 							resolve()
 						}
 						else throw err
 					})
-				}).then(() => {
-					return new Promise(resolve => {
-						rename(newFile, process.env.SD_FILE_PATH as unknown as string, (err) => {
-							if (!err) {
-								resolve()
-							}
-							else throw err
-						})
-					})
-				}).then(() => {
-					console.log(`SD file at ${process.env.SD_FILE_PATH} has been updated with ${targets.length} devices\n`)
 				})
-			}
+			}).then(() => {
+				console.log(`SD file at ${SD_FILE_PATH} has been updated with ${targets.length} devices\n`)
+			})
 		}
 	})
 }

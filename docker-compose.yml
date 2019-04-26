@@ -8,6 +8,8 @@ services:
             io.balena.features.balena-api: '1'
         volumes:
             - 'resin-data:/app/data'
+        environment:
+            - 'SD_FILE_PATH=/app/data/balena.json'
     prometheus:
         build: ./prometheus
         network_mode: 'host'
