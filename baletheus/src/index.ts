@@ -9,7 +9,7 @@ balenaSdk.setSharedOptions({
 	dataDirectory: settings.get('dataDirectory'),
 })
 
-const balena = balenaSdk()
+const balena = balenaSdk();
 const SD_FILE_PATH = process.env.SD_FILE_PATH || './balena.json';
 
 interface Params {}
@@ -56,7 +56,7 @@ interface Labels {
 //  },
 //  ...
 //]
-const writeDevices = (): void => {
+const writeDevices = (proxyUrl: string): void => {
 	let allTargets = new Array<Device>();
 	balena.models.device.getAll().then((devices: balenaSdk.Device[]) => {
 
@@ -68,10 +68,9 @@ const writeDevices = (): void => {
 					os_version: device.os_version,
 					os_variant: device.os_variant,
 					supervisor_version: device.supervisor_version} as Labels;
-			const targets: string[] = [];
 			if (!process.env.USE_PUBLIC_URLS) {
 				if (device.ip_address) {
-					const targets = device.ip_address.split(" ");
+					const targets: string[] = device.ip_address.split(" ");
 					const newDevice = {
 						targets,
 						labels,
@@ -83,14 +82,11 @@ const writeDevices = (): void => {
 			} else {
 				if (device.is_web_accessible) {
 					if (device.uuid) {
-						balena.settings.get('proxyUrl')
-						.then((proxyUrl: string) => {
-							const newDevice = {
-								targets: [`${device.uuid}.${proxyUrl}`],
-								labels,
-							} as Device;
-							allTargets.push(newDevice);
-						});
+						const newDevice = {
+							targets: [`${device.uuid}.${proxyUrl}`],
+							labels,
+						} as Device;
+						allTargets.push(newDevice);
 					}
 				} else {
 					console.log(`device ${device.device_name} does not have the public web URL enabled`);
@@ -120,7 +116,8 @@ const writeDevices = (): void => {
 					})
 				})
 			}).then(() => {
-				console.log(`SD file at ${SD_FILE_PATH} has been updated with ${targets.length} devices\n`)
+				console.log(`SD file at ${SD_FILE_PATH} has been updated with ${targets.length} devices`)
+				console.log()
 			})
 		}
 	})
@@ -141,5 +138,7 @@ if (!process.env.API_KEY) {
 
 const REFRESH_RATE: number = process.env.REFRESH_RATE as unknown as number || 5000;
 setInterval(() => {
-	writeDevices();
+	balena.settings.get('proxyUrl').then((proxyUrl: string) => {
+		writeDevices(proxyUrl);
+	});
 }, REFRESH_RATE as unknown as number);
