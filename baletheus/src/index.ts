@@ -89,7 +89,6 @@ const writeDevices = (): void => {
 								targets: [`${device.uuid}.${proxyUrl}`],
 								labels,
 							} as Device;
-							console.log(newDevice);
 							allTargets.push(newDevice);
 						});
 					}
