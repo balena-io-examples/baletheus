@@ -24,29 +24,29 @@ The sd sidecar writes to a shared volume that Prometheus reads from directly.
 
 ## baletheus Configuration options
 
-Pass in an API_KEY value via balenaCloud or in the environment
+All runtime configuration is done via environment variables:
 
-All other runtime configuration is done via environment variables:
-```sh
-SD_FILE_PATH: PATH (required) File path to write devices to
-REFRESH_RATE: NUMBER Refresh interval (ms) (default: 5000)
-USE_PUBLIC_URLS: BOOLEAN Enable scraping via public URL
-WRITE_EMPTY: BOOLEAN Enable writing file without any devices (disable failsafe)
-```
+| Environment Variable Name | Type | Required? | Use |
+|:-----------|:------------|:------------|:------------|
+| `API_KEY` | string | true | Key to access balenaCloud API |
+| `SD_FILE_PATH` | string | false | File path to write devices to |
+| `REFRESH_RATE` | number | false | Refresh interval (ms) (default | 5000) |
+| `USE_PUBLIC_URLS` | boolean | false | Enable scraping via public URL |
+| `WRITE_EMPTY` | boolean | false | Enable writing file without any devices (disable failsafe) |
 
 ## Labels:
 
 Exported labels include:
 
-```sh
-device_name: string,
-uuid: string,
-device_type: string,
-commit: string,
-os_version: string,
-os_variant: string,
-supervisor_version: string
-```
+| Label | Type |
+|:-----------|:------------|
+| device_name | string |
+| uuid | string |
+| device_type | string |
+| commit | string |
+| os_version | string |
+| os_variant | string |
+| supervisor_version | string |
 
 ## NOTE:
 
