@@ -29,6 +29,7 @@ All runtime configuration is done via environment variables:
 | Environment Variable Name | Type | Required? | Use |
 |:-----------|:------------|:------------|:------------|
 | `API_KEY` | string | true | Key to access balenaCloud API |
+| `APPLICATION` | string or number | false | Application to filter devices (either number or name) |
 | `SD_FILE_PATH` | string | false | File path to write devices to |
 | `REFRESH_RATE` | number | false | Refresh interval (ms) (default | 5000) |
 | `USE_PUBLIC_URLS` | boolean | false | Enable scraping via public URL |

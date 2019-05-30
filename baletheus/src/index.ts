@@ -45,6 +45,15 @@ interface Labels {
 	supervisor_version: string
 }
 
+const getDevices = (): Promise<any> => {
+	if (process.env.APPLICATION) {
+		console.log(`filtering results to application ${process.env.APPLICATION}`);
+		return balena.models.device.getAllByApplication(process.env.APPLICATION);
+	} else {
+		return balena.models.device.getAll();
+	}
+}
+
 // prometheus file_sd format
 // from: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config
 // [
@@ -58,7 +67,7 @@ interface Labels {
 //]
 const writeDevices = (proxyUrl: string): void => {
 	let allTargets = new Array<Device>();
-	balena.models.device.getAll().then((devices: balenaSdk.Device[]) => {
+	getDevices().then((devices: balenaSdk.Device[]) => {
 
 		devices.forEach((device) => {
 			const labels = {device_name: device.device_name,
