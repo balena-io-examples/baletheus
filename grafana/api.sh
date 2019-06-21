@@ -1,14 +1,17 @@
 #!/bin/bash -x
 
 GRAFANA_URL="127.0.0.1:$GF_SERVER_HTTP_PORT"
+
 count=0
 max_retries=10
 
-while [[ "$count" < "$max_retries" ]]; do
+while [[ $count -lt $max_retries ]]; do
+    test_cmd=$(curl "http://$GRAFANA_URL/api/health" | jq -r -e .database)
+
     if [ "$test_cmd" != 'ok' ]; then
-        test_cmd=$(curl "http://$GRAFANA_URL/api/health" | jq -r -e .database)
         count=$(( "$count" + 1 ))
         sleep 10
+        continue
     fi
     if curl -sq -w "\n" -X PUT "http://$GRAFANA_URL/api/user/preferences" \
         -H 'Accept-Encoding: gzip, deflate, br' -H 'X-Grafana-Org-Id: 1' -H \
@@ -17,5 +20,6 @@ while [[ "$count" < "$max_retries" ]]; do
         break
     else
         count=$(( "$count" + 1 ))
+        sleep 10
     fi
 done
