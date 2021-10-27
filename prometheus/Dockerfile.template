@@ -1,5 +1,5 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-golang:1.12.1
+FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-golang:latest-bullseye
 WORKDIR /app
 ADD . /app/
-RUN install_packages git && go get github.com/prometheus/prometheus/cmd/...
+RUN install_packages git && go get github.com/prometheus/prometheus@f29caccc42557f6a8ec30ea9b3c8c089391bd5df
 CMD ["/app/entry.sh"]
