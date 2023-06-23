@@ -5,7 +5,7 @@
   "repository": "",
   "main": "src/index.js",
   "dependencies": {
-    "balena-sdk": "^11.2.0",
+    "balena-sdk": "^17.4.0",
     "ts-node": "^7.0.1",
     "typescript": "^3.2.1"
   },
